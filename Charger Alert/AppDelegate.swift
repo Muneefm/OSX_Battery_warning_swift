@@ -11,17 +11,64 @@ import Cocoa
 @NSApplicationMain
 class AppDelegate: NSObject, NSApplicationDelegate {
 
+    let statusItem = NSStatusBar.system.statusItem(withLength:NSStatusItem.squareLength)
 
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
+        if let button = statusItem.button {
+            button.image = NSImage(named:NSImage.Name("StatusBarIcon"))
+            button.action = #selector(printQuote(_:))
+        }
+        constructMenu()
+
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {
         // Insert code here to tear down your application
     }
-
+    func constructMenu() {
+        let menu = NSMenu()
+        
+        menu.addItem(NSMenuItem(title: "Start Service", action: #selector(AppDelegate.printQuote(_:)), keyEquivalent: "s"))
+        menu.addItem(NSMenuItem.separator())
+        menu.addItem(NSMenuItem(title: "Quit Service", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        
+        statusItem.menu = menu
+    }
+    
+    @objc func printQuote(_ sender: Any?) {
+        startEvilService()
+    }
     // MARK: - Core Data stack
+    func startEvilService(){
+        let loop: CFRunLoopSource = IOPSNotificationCreateRunLoopSource({ (context: UnsafeMutableRawPointer?) in
+            debugPrint("Power source changed")
+            // let blob = IOPSCopyPowerSourcesInfo()
+            //  print(blob)
+            let psInfo = IOPSCopyPowerSourcesInfo().takeRetainedValue()
+            let psList = IOPSCopyPowerSourcesList(psInfo).takeRetainedValue() as [CFTypeRef]
+            
+            for ps in psList {
+                if let psDesc = IOPSGetPowerSourceDescription(psInfo, ps).takeUnretainedValue() as? [String: Any] {
+                    let isCharging = (psDesc["Power Source State"] as? String)
+                    if( isCharging == "Battery Power" ){
+                        let sound: NSSound
+                        sound =  (NSSound(named: NSSound.Name(rawValue: "suffer")))!
+                        if(!sound.isPlaying){
+                            sound.play()
+                            print("is not playing")
+                        }else{
+                            print("is  playing")
+                        }
+                    }
+                    
+                }
+            }
+            
+        }, &ViewController.context).takeRetainedValue() as CFRunLoopSource
+        CFRunLoopAddSource(CFRunLoopGetCurrent(), loop, CFRunLoopMode.defaultMode)
+    }
 
     lazy var persistentContainer: NSPersistentContainer = {
         /*

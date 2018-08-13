@@ -20,7 +20,7 @@ class ViewController: NSViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        startEvilService()
+       // startEvilService()
         if let button = statusItem.button {
             button.action = #selector(self.statusBarButtonClicked(sender:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
